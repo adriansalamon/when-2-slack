@@ -1,0 +1,26 @@
+-- CreateTable
+CREATE TABLE "Poll" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "author" TEXT NOT NULL,
+    "channel" TEXT NOT NULL,
+    "title" TEXT NOT NULL,
+    "description" TEXT NOT NULL
+);
+
+-- CreateTable
+CREATE TABLE "Option" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "time" TEXT NOT NULL,
+    "pollId" INTEGER NOT NULL,
+    CONSTRAINT "Option_pollId_fkey" FOREIGN KEY ("pollId") REFERENCES "Poll" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
+
+-- CreateTable
+CREATE TABLE "Vote" (
+    "id" INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+    "user" TEXT NOT NULL,
+    "optionId" INTEGER NOT NULL,
+    "pollId" INTEGER NOT NULL,
+    CONSTRAINT "Vote_pollId_fkey" FOREIGN KEY ("pollId") REFERENCES "Poll" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
+    CONSTRAINT "Vote_optionId_fkey" FOREIGN KEY ("optionId") REFERENCES "Option" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
+);
