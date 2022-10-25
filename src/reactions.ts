@@ -144,9 +144,11 @@ const reacted_users = async (
   let users = new Set();
 
   reactions.message?.reactions?.forEach((react) => {
-    react.users?.forEach((user) => {
-      users.add(user);
-    });
+    if (react.name === "no_entry_sign") {
+      react.users?.forEach((user) => {
+        users.add(user);
+      });
+    }
   });
 
   votes.forEach((vote) => {
