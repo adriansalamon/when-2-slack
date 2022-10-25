@@ -7,24 +7,26 @@ import {
   OverflowAction,
 } from "@slack/bolt";
 import { WebClient } from "@slack/web-api";
+import { list_non_answered, remind_in_thread } from "./reactions";
 
 let prisma = new PrismaClient();
 
-export async function create_poll(
-  client: WebClient,
-  channel: string,
-  user_id: string,
-  options: { time: Date }[]
-) {
+export interface PollArgs {
+  channel: string;
+  user_id: string;
+  title: string;
+  options: { time: Date }[];
+}
+export async function create_poll(client: WebClient, args: PollArgs) {
   let created = await prisma.poll.create({
     data: {
-      author: user_id,
-      channel: channel,
+      author: args.user_id,
+      channel: args.channel,
       description: "",
-      title: "",
+      title: args.title,
       ts: "",
       options: {
-        create: options,
+        create: args.options,
       },
     },
   });
@@ -32,7 +34,7 @@ export async function create_poll(
   let blocks = await poll_blocks(created.id);
 
   let res = await client.chat.postMessage({
-    channel: channel,
+    channel: args.channel,
     blocks: blocks,
   });
 
@@ -98,7 +100,9 @@ export async function handle_overflow(
     where: { ts: body.message?.ts, channel: body.channel?.id },
   });
 
-  if (action.selected_option.value === "delete") {
+  const option = action.selected_option.value;
+
+  if (option === "delete") {
     if (poll.author === body.user.id) {
       await prisma.poll.delete({
         where: {
@@ -115,6 +119,12 @@ export async function handle_overflow(
         text: `You cannot delete other users's polls.`,
       });
     }
+  } else if (option === "remind-thread") {
+    let ts = body.message?.ts;
+    await remind_in_thread(client, body.channel?.id!, body.user.id, ts!);
+  } else if (option === "list-non-responded") {
+    let ts = body.message?.ts;
+    await list_non_answered(client, body.channel?.id!, body.user.id, ts!);
   }
 }
 
@@ -175,17 +185,25 @@ const poll_blocks = async (pollId: number): Promise<(Block | KnownBlock)[]> => {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: "Fill in a date that fits you! *React* with :no_entry_sign: if no times work!",
+        text: `Meeting times for *${poll.title}*. Select all timeslots that work! *React* with :no_entry_sign: if no times work!`,
       },
       accessory: {
         type: "overflow",
         action_id: "form_overflow",
         options: [
           { text: { type: "plain_text", text: "Delete" }, value: "delete" },
+          {
+            text: { type: "plain_text", text: "Remind in thread" },
+            value: "remind-thread",
+          },
+          {
+            text: { type: "plain_text", text: "List users not responded" },
+            value: "list-non-responded",
+          },
         ],
       },
     },
     { type: "divider" },
-    ...options,
+    ...options
   ];
 };

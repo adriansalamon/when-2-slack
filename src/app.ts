@@ -11,6 +11,7 @@ import {
 
 import { open_schedule_modal, add_meeting, handle_submit } from "./modal";
 import { handle_vote, handle_overflow } from "./poll";
+import { remind_in_thread } from "./reactions";
 
 const app = new App({
   token: process.env.SLACK_BOT_TOKEN,

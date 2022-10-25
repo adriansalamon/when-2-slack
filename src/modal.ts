@@ -54,15 +54,27 @@ export async function add_meeting(
   });
 }
 
+// Handles submitting of modal, to create a mew poll
 export async function handle_submit(client: WebClient, body: SlackViewAction) {
+  console.log(body.view.state);
   let private_metadata = JSON.parse(body.view.private_metadata);
-  let options = Object.values(body.view.state.values).map((input) => ({
-    time: new Date(
-      `${input["select-date"].selected_date}T${input["select-time"].selected_time}`
-    ),
-  }));
+  let options = Object.values(body.view.state.values)
+    .filter((input) => input["select-date"])
+    .map((input) => ({
+      time: new Date(
+        `${input["select-date"].selected_date}T${input["select-time"].selected_time}`
+      ),
+    }));
 
-  await create_poll(client, private_metadata.channel, body.user.id, options);
+  let title =
+    body.view.state.values["poll-title"]["title"].value || "Schedule meeting";
+
+  await create_poll(client, {
+    channel: private_metadata.channel,
+    user_id: body.user.id,
+    options,
+    title,
+  });
 }
 
 const modal = (blocks: number): ModalView => {
@@ -103,19 +115,36 @@ const modal = (blocks: number): ModalView => {
     callback_id: "schedule_view",
     title: {
       type: "plain_text",
-      text: "Schemalägg möten!",
+      text: "Schedule meetings!",
     },
     blocks: [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: "Fyll i alternativ nedan!",
+          text: "Please fill in :clock1: times for meetings below, users can select multiple options!",
         },
       },
-      { type: "divider" },
+      {
+        type: "input",
+        block_id: "poll-title",
+        label: {
+          type: "plain_text",
+          text: "Title of meeting",
+        },
+        element: {
+          type: "plain_text_input",
+          action_id: "title",
+        },
+      },
+      {
+        type: "section",
+        text: {
+            type: "mrkdwn",
+            text: "*Timeslots*"
+        }
+      },
       ...dateBlocks,
-      { type: "divider" },
       {
         type: "actions",
         elements: [
@@ -123,7 +152,7 @@ const modal = (blocks: number): ModalView => {
             type: "button",
             text: {
               type: "plain_text",
-              text: "Lägg till alternativ!",
+              text: "Add timeslot",
               emoji: true,
             },
             value: `${blocks}`,
