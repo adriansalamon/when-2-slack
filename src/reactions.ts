@@ -1,9 +1,57 @@
 import { WebClient } from "@slack/web-api";
 import { PrismaClient } from "@prisma/client";
+import { Logger } from "@slack/bolt";
 
 let prisma = new PrismaClient();
 
-export const remind_in_thread = async (
+export const remind_in_dm = async (
+  client: WebClient,
+  channel: string,
+  user: string,
+  thread_ts: string,
+  logger: Logger
+) => {
+  logger.info(`User ${user} invokted remind_in_dms in channel ${channel}`);
+  let no_react_ids = await get_no_react_ids(client, channel, thread_ts);
+
+  if (no_react_ids?.length === 0) {
+    // All users have reacted
+    await client.chat.postEphemeral({
+      channel: channel,
+      user: user,
+      text: "Looks like all users have responded!",
+    });
+  } else {
+    let message_link = await client.chat
+      .getPermalink({ channel: channel, message_ts: thread_ts })
+      .then((link) => link.permalink!);
+
+    let pinged = await Promise.all(
+      no_react_ids.map(async (member) => {
+        await client.chat.postMessage({
+          channel: member.id!,
+          text: `Dont forget to answer this <${message_link}|form>`,
+        });
+        return member.real_name!;
+      })
+    );
+
+    let pinged_text = pinged.join(", ");
+
+    await client.chat.postEphemeral({
+      channel: channel,
+      user: user,
+      text: `I just pinged these users:\n${pinged_text}`,
+    });
+  }
+
+  logger.info(
+    `User ${user} reminded ${no_react_ids.length} users in channel ${channel}`
+  );
+};
+
+// Sends an ephemeral message with users in channel that have now answered
+export const list_non_answered = async (
   client: WebClient,
   channel: string,
   user: string,
@@ -14,51 +62,22 @@ export const remind_in_thread = async (
   if (no_react_ids?.length === 0) {
     // All users have reacted
     await client.chat.postEphemeral({
-        channel: channel,
-        user: user,
-        text: "Looks like all users have responded!"
-    })
-
+      channel: channel,
+      user: user,
+      text: "Looks like all users have responded!",
+    });
   } else {
+    let non_answered_text = no_react_ids
+      ?.map((member) => member.real_name)
+      .join(", ");
 
-    let ping_text = no_react_ids?.map((name) => `<@${name}>`).join(" ");
-
-    await client.chat.postMessage({
-        channel: channel,
-        thread_ts: thread_ts,
-        text: `Dont forget :point_up:\n${ping_text}`,
+    await client.chat.postEphemeral({
+      channel: channel,
+      user: user,
+      text: `Looks like the following users have not responded:\n${non_answered_text}`,
     });
   }
 };
-
-// Sends an ephemeral message with users in channel that have now answered
-export const list_non_answered = async (
-    client: WebClient,
-    channel: string,
-    user: string,
-    thread_ts: string
-  ) => {
-    let no_react_ids = await get_no_react_ids(client, channel, thread_ts);
-  
-    if (no_react_ids?.length === 0) {
-      // All users have reacted
-      await client.chat.postEphemeral({
-          channel: channel,
-          user: user,
-          text: "Looks like all users have responded!"
-      })
-  
-    } else {
-  
-      let non_answered_text = no_react_ids?.join(", ");
-  
-      await client.chat.postEphemeral({
-          channel: channel,
-          user: user,
-          text: `Looks like the following users have not responded:\n${non_answered_text}`,
-      });
-    }
-  };
 
 // Returns a list of user ids that have not reacted
 const get_no_react_ids = async (
@@ -76,9 +95,7 @@ const get_no_react_ids = async (
 
   let user_map = await client.users.list();
 
-  return user_map.members
-    ?.filter((member) => not_reacted.has(member.id!))
-    .map((member) => member.name);
+  return user_map.members?.filter((member) => not_reacted.has(member.id!))!;
 };
 
 // Returns an array of members

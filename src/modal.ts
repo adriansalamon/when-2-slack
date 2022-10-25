@@ -55,8 +55,7 @@ export async function add_meeting(
 }
 
 // Handles submitting of modal, to create a mew poll
-export async function handle_submit(client: WebClient, body: SlackViewAction) {
-  console.log(body.view.state);
+export async function handle_submit(client: WebClient, body: SlackViewAction, logger: Logger) {
   let private_metadata = JSON.parse(body.view.private_metadata);
   let options = Object.values(body.view.state.values)
     .filter((input) => input["select-date"])
@@ -69,12 +68,14 @@ export async function handle_submit(client: WebClient, body: SlackViewAction) {
   let title =
     body.view.state.values["poll-title"]["title"].value || "Schedule meeting";
 
-  await create_poll(client, {
+  let poll = await create_poll(client, {
     channel: private_metadata.channel,
     user_id: body.user.id,
     options,
     title,
   });
+
+  logger.info(`${body.user} created poll ${poll.id} in channel ${poll.channel}`);
 }
 
 const modal = (blocks: number): ModalView => {

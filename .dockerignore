@@ -1,0 +1,5 @@
+# flyctl launch added from .gitignore
+**/.env
+**/dist
+**/node_modules
+**/prisma/dev.db

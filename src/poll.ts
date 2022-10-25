@@ -4,10 +4,11 @@ import {
   BlockAction,
   ButtonAction,
   KnownBlock,
+  Logger,
   OverflowAction,
 } from "@slack/bolt";
 import { WebClient } from "@slack/web-api";
-import { list_non_answered, remind_in_thread } from "./reactions";
+import { list_non_answered, remind_in_dm } from "./reactions";
 
 let prisma = new PrismaClient();
 
@@ -44,7 +45,7 @@ export async function create_poll(client: WebClient, args: PollArgs) {
     name: "no_entry_sign",
   });
 
-  await prisma.poll.update({
+  return await prisma.poll.update({
     where: {
       id: created.id,
     },
@@ -63,7 +64,6 @@ export async function handle_vote(
   let poll = await prisma.poll.findFirstOrThrow({
     where: { ts: body.message?.ts, channel: body.channel?.id },
   });
-  console.log(poll);
 
   let option = await prisma.option.findFirstOrThrow({
     where: { id: parseInt(action.value) },
@@ -94,7 +94,8 @@ export async function handle_vote(
 export async function handle_overflow(
   client: WebClient,
   body: BlockAction<OverflowAction>,
-  action: OverflowAction
+  action: OverflowAction,
+  logger: Logger
 ) {
   let poll = await prisma.poll.findFirstOrThrow({
     where: { ts: body.message?.ts, channel: body.channel?.id },
@@ -119,9 +120,9 @@ export async function handle_overflow(
         text: `You cannot delete other users's polls.`,
       });
     }
-  } else if (option === "remind-thread") {
+  } else if (option === "remind-dm") {
     let ts = body.message?.ts;
-    await remind_in_thread(client, body.channel?.id!, body.user.id, ts!);
+    await remind_in_dm(client, body.channel?.id!, body.user.id, ts!, logger);
   } else if (option === "list-non-responded") {
     let ts = body.message?.ts;
     await list_non_answered(client, body.channel?.id!, body.user.id, ts!);
@@ -185,7 +186,7 @@ const poll_blocks = async (pollId: number): Promise<(Block | KnownBlock)[]> => {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Meeting times for *${poll.title}*. Select all timeslots that work! *React* with :no_entry_sign: if no times work!`,
+        text: `Meeting times for *${poll.title}*. Select all :clock1: timeslots that work! *React* with :no_entry_sign: if no times work!`,
       },
       accessory: {
         type: "overflow",
@@ -193,8 +194,8 @@ const poll_blocks = async (pollId: number): Promise<(Block | KnownBlock)[]> => {
         options: [
           { text: { type: "plain_text", text: "Delete" }, value: "delete" },
           {
-            text: { type: "plain_text", text: "Remind in thread" },
-            value: "remind-thread",
+            text: { type: "plain_text", text: "Remind in dm" },
+            value: "remind-dm",
           },
           {
             text: { type: "plain_text", text: "List users not responded" },
