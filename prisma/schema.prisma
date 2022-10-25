@@ -12,6 +12,7 @@ datasource db {
 
 model Poll {
   id          Int      @id @default(autoincrement())
+  ts          String
   author      String
   channel     String
   title       String
@@ -22,17 +23,18 @@ model Poll {
 
 model Option {
   id     Int    @id @default(autoincrement())
-  poll   Poll   @relation(fields: [pollId], references: [id])
-  time   String
+  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  time   DateTime
   votes  Vote[]
   pollId Int
 }
 
 model Vote {
   id       Int    @id @default(autoincrement())
-  poll     Poll   @relation(fields: [pollId], references: [id])
-  option   Option @relation(fields: [optionId], references: [id])
+  poll     Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  option   Option @relation(fields: [optionId], references: [id], onDelete: Cascade)
   user     String
+  userName String
   optionId Int
   pollId   Int
 }

@@ -1,7 +1,19 @@
 /* eslint-disable no-console */
 /* eslint-disable import/no-internal-modules */
 import "./utils/env";
-import { App, BlockAction, LogLevel, ModalView, View } from "@slack/bolt";
+import {
+  App,
+  Block,
+  BlockAction,
+  ButtonAction,
+  KnownBlock,
+  LogLevel,
+  ModalView,
+  OverflowAction,
+  View,
+} from "@slack/bolt";
+
+import { ChatPostMessageArguments } from "@slack/web-api";
 import { type } from "os";
 import { Poll, Option, Vote, Prisma, PrismaClient } from "@prisma/client";
 
@@ -66,16 +78,89 @@ app.action<BlockAction>({ action_id: "select-date" }, async ({ ack }) => {
   await ack();
 });
 
-app.action<BlockAction>({ action_id: "select-time" }, async ({ ack }) => {
-  await ack();
-});
+app.action<BlockAction>(
+  { action_id: "select-time" },
+  async ({ ack, action }) => {
+    await ack();
+  }
+);
+
+// Handle when a user votes
+app.action<BlockAction<ButtonAction>>(
+  "vote_click",
+  async ({ ack, body, client, logger, action, say }) => {
+    await ack();
+    let poll = await prisma.poll.findFirstOrThrow({
+      where: { ts: body.message?.ts, channel: body.channel?.id },
+    });
+    console.log(poll);
+
+    let option = await prisma.option.findFirstOrThrow({
+      where: { id: parseInt(action.value) },
+    });
+    let user = body.user;
+
+    let vote = await prisma.vote.findFirst({
+      where: { user: user.id, optionId: option.id },
+    });
+
+    if (vote) {
+      await prisma.vote.delete({ where: { id: vote.id } });
+    } else {
+      await prisma.vote.create({
+        data: {
+          user: user.id,
+          userName: user.name,
+          optionId: option.id,
+          pollId: poll.id,
+        },
+      });
+    }
+
+    let blocks = await poll_blocks(poll.id);
+    client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+  }
+);
+
+// Handle when a user deletes a poll
+app.action<BlockAction<OverflowAction>>(
+  "form_overflow",
+  async ({ ack, body, client, logger, action, say }) => {
+    await ack();
+    let poll = await prisma.poll.findFirstOrThrow({
+      where: { ts: body.message?.ts, channel: body.channel?.id },
+    });
+
+    if (action.selected_option.value === "delete") {
+      if (poll.author === body.user.id) {
+        await prisma.poll.delete({
+          where: {
+            id: poll.id,
+          },
+          include: { options: true, votes: true },
+        });
+
+        await client.chat.delete({ channel: poll.channel, ts: poll.ts });
+       
+      } else {
+        client.chat.postEphemeral({
+          channel: poll.channel,
+          user: body.user.id,
+          text: `You cannot delete other users's polls.`,
+        });
+      }
+    }
+  }
+);
 
 app.view("schedule_view", async ({ ack, body, client, logger }) => {
   await ack();
 
   let private_metadata = JSON.parse(body.view.private_metadata);
   let options = Object.values(body.view.state.values).map((input) => ({
-    time: `${input["select-date"].selected_date} ${input["select-time"].selected_time}`,
+    time: new Date(
+      `${input["select-date"].selected_date}T${input["select-time"].selected_time}`
+    ),
   }));
 
   let created = await prisma.poll.create({
@@ -84,22 +169,34 @@ app.view("schedule_view", async ({ ack, body, client, logger }) => {
       channel: private_metadata.channel,
       description: "",
       title: "",
+      ts: "",
       options: {
         create: options,
       },
     },
   });
 
-  let poll = await prisma.poll.findFirstOrThrow({
-    where: { id: created.id },
-    include: { options: { include: { votes: true } } },
+  let blocks = await poll_blocks(created.id);
+
+  let res = await client.chat.postMessage({
+    channel: private_metadata.channel,
+    blocks: blocks,
   });
 
-  let form = poll_form(poll);
+  await client.reactions.add({
+    channel: res.channel,
+    timestamp: res.ts,
+    name: "no_entry_sign",
+  });
 
-  client.chat.postMessage({
-    channel: private_metadata.channel,
-    ...form,
+  await prisma.poll.update({
+    where: {
+      id: created.id,
+    },
+    data: {
+      ts: res.ts,
+      channel: res.channel,
+    },
   });
 });
 
@@ -178,60 +275,76 @@ const modal = (blocks: number): ModalView => {
   };
 };
 
-type PollData = Poll & { options: (Option & { votes: Vote[] })[] };
+const poll_blocks = async (pollId: number): Promise<(Block | KnownBlock)[]> => {
+  let poll = await prisma.poll.findFirstOrThrow({
+    where: { id: pollId },
+    include: { options: { include: { votes: true } } },
+  });
 
-const poll_form = (poll: PollData): View => {
   let options = poll.options.flatMap((option) => {
-    let votes = option.votes.map((vote) => ({
-      type: "image",
-      image_url: vote.user,
-      alt_text: vote.user,
-    }));
+    let names = option.votes.reduce(
+      (acc, vote) => `${acc} @${vote.userName}`,
+      ""
+    );
+
+    let time = option.time;
+    const options = {
+      weekday: "long",
+      year: "numeric",
+      month: "long",
+      day: "numeric",
+    };
+
+    let text = `:calendar: *${time.toLocaleDateString("en-US", {
+      weekday: "long",
+      year: "numeric",
+      month: "short",
+      day: "numeric",
+    })}, ${time.toLocaleTimeString("sv-SE").slice(0, 5)}*`;
+
+    if (option.votes.length > 0) {
+      text += ` ${"`"}${option.votes.length}${"`"}\n${names}`;
+    }
 
     return [
       {
         type: "section",
         text: {
           type: "mrkdwn",
-          text: `:calendar: *${option.time}*`,
+          text: text,
         },
         accessory: {
           type: "button",
+          action_id: "vote_click",
           text: {
             type: "plain_text",
             emoji: true,
             text: "Vote",
           },
-          value: "vote",
+          value: `${option.id}`,
         },
-      },
-      {
-        type: "context",
-        elements: [
-          ...votes,
-          {
-            type: "plain_text",
-            emoji: true,
-            text: `${votes.length} votes`,
-          },
-        ],
       },
     ];
   });
-  return {
-    type: "home",
-    blocks: [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: "Fill in a date that fits you!",
-        },
+
+  return [
+    {
+      type: "section",
+      text: {
+        type: "mrkdwn",
+        text: "Fill in a date that fits you! *React* with :no_entry_sign: if no times work!",
       },
-      { type: "divider" },
-      ...options
-    ],
-  };
+      accessory: {
+        type: "overflow",
+        action_id: "form_overflow",
+        options: [
+          { text: { type: "plain_text", text: "Delete" }, value: "delete" },
+        ],
+      },
+    },
+    { type: "divider" },
+    ...options,
+  ];
 };
 
 (async () => {
