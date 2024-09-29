@@ -39,10 +39,10 @@ const app_token = process.env.SLACK_APP_TOKEN;
 const token = process.env.SLACK_BOT_TOKEN;
 
 const app = new App({
-  //signingSecret: process.env.SLACK_SIGNING_SECRET,
-  //clientId: process.env.SLACK_CLIENT_ID,
-  //clientSecret: process.env.SLACK_CLIENT_SECRET,
-  //stateSecret: process.env.SLACK_STATE_SECRET,
+  signingSecret: process.env.SLACK_SIGNING_SECRET,
+  clientId: process.env.SLACK_CLIENT_ID,
+  clientSecret: process.env.SLACK_CLIENT_SECRET,
+  stateSecret: process.env.SLACK_STATE_SECRET,
   scopes: [
     "commands",
     "channels:read",
@@ -65,8 +65,6 @@ const app = new App({
   logLevel,
   port: Number(process.env.PORT) || 3000,
   socketMode: process.env.SLACK_SOCKET_MODE === "true",
-  appToken: app_token,
-  token: token,
 });
 
 app.use(async ({ next }) => {

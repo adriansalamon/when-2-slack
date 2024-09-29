@@ -1,0 +1,44 @@
+display_information:
+  name: when2slack
+  description: Bot for scheduling meetings, creating polls, and reminding people to react
+features:
+  bot_user:
+    display_name: when2slack
+    always_online: true
+  slash_commands:
+    - command: /schedule
+      description: Schedule a new meeting
+      url: https://when2slack.fly.dev/slack/events
+      should_escape: false
+    - command: /poll
+      description: Create a poll
+      url: https://when2slack.fly.dev/slack/events
+      should_escape: false
+oauth_config:
+  redirect_urls:
+    - https://when2slack.fly.dev/slack/oauth_redirect
+  scopes:
+    bot:
+      - channels:history
+      - channels:read
+      - chat:write
+      - commands
+      - groups:history
+      - groups:read
+      - im:history
+      - mpim:history
+      - reactions:read
+      - reactions:write
+      - users:read
+      - app_mentions:read
+settings:
+  event_subscriptions:
+    request_url: https://when2slack.fly.dev/slack/events
+    bot_events:
+      - app_mention
+  interactivity:
+    is_enabled: true
+    request_url: https://when2slack.fly.dev/slack/events
+  org_deploy_enabled: false
+  socket_mode_enabled: false
+  token_rotation_enabled: false
