@@ -11,20 +11,23 @@ datasource db {
 }
 
 model Poll {
-  id          Int      @id @default(autoincrement())
-  ts          String
-  author      String
-  channel     String
-  title       String
-  description String
-  options     Option[]
-  votes       Vote[]
+  id                Int      @id @default(autoincrement())
+  type              String   @default("meeting")
+  ts                String
+  author            String
+  channel           String
+  title             String
+  description       String
+  usersCanAddOption Boolean  @default(false)
+  options           Option[]
+  votes             Vote[]
 }
 
 model Option {
-  id     Int    @id @default(autoincrement())
-  poll   Poll   @relation(fields: [pollId], references: [id], onDelete: Cascade)
-  time   DateTime
+  id     Int       @id @default(autoincrement())
+  poll   Poll      @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  name   String?
+  time   DateTime?
   votes  Vote[]
   pollId Int
 }
@@ -40,33 +43,32 @@ model Vote {
 }
 
 model SlackAppInstallation {
-    @@map("slack_app_installation")
+  id                              Int       @id @default(autoincrement())
+  clientId                        String?   @map("client_id")
+  appId                           String?   @map("app_id")
+  enterpriseId                    String?   @map("enterprise_id")
+  enterpriseName                  String?   @map("enterprise_name")
+  enterpriseUrl                   String?   @map("enterprise_url")
+  teamId                          String?   @map("team_id")
+  teamName                        String?   @map("team_name")
+  botToken                        String?   @map("bot_token")
+  botId                           String?   @map("bot_id")
+  botUserId                       String?   @map("bot_user_id")
+  botScopes                       String?   @map("bot_scopes")
+  botRefreshToken                 String?   @map("bot_refresh_token")
+  botTokenExpiresAt               DateTime? @map("bot_token_expires_at")
+  userId                          String?   @map("user_id")
+  userToken                       String?   @map("user_token")
+  userScopes                      String?   @map("user_scopes")
+  userRefreshToken                String?   @map("user_refresh_token")
+  userTokenExpiresAt              DateTime? @map("user_token_expires_at")
+  incomingWebhookUrl              String?   @map("incoming_webhook_url")
+  incomingWebhookChannel          String?   @map("incoming_webhook_channel")
+  incomingWebhookChannelId        String?   @map("incoming_webhook_channel_id")
+  incomingWebhookConfigurationUrl String?   @map("incoming_webhook_configuration_url")
+  isEnterpriseInstall             Boolean   @default(false) @map("is_enterprise_install")
+  tokenType                       String    @default("bot") @map("token_type")
+  installedAt                     DateTime  @default(now()) @map("installed_at")
 
-    id                              Int       @id @default(autoincrement())
-    clientId                        String?   @map("client_id")
-    appId                           String?   @map("app_id")
-    enterpriseId                    String?   @map("enterprise_id")
-    enterpriseName                  String?   @map("enterprise_name")
-    enterpriseUrl                   String?   @map("enterprise_url")
-    teamId                          String?   @map("team_id")
-    teamName                        String?   @map("team_name")
-    botToken                        String?   @map("bot_token")
-    botId                           String?   @map("bot_id")
-    botUserId                       String?   @map("bot_user_id")
-    botScopes                       String?   @map("bot_scopes")
-    botRefreshToken                 String?   @map("bot_refresh_token")
-    botTokenExpiresAt               DateTime? @map("bot_token_expires_at")
-    userId                          String?   @map("user_id")
-    userToken                       String?   @map("user_token")
-    userScopes                      String?   @map("user_scopes")
-    userRefreshToken                String?   @map("user_refresh_token")
-    userTokenExpiresAt              DateTime? @map("user_token_expires_at")
-    incomingWebhookUrl              String?   @map("incoming_webhook_url")
-    incomingWebhookChannel          String?   @map("incoming_webhook_channel")
-    incomingWebhookChannelId        String?   @map("incoming_webhook_channel_id")
-    incomingWebhookConfigurationUrl String?   @map("incoming_webhook_configuration_url")
-    isEnterpriseInstall             Boolean   @default(false) @map("is_enterprise_install")
-    tokenType                       String    @default("bot") @map("token_type")
-    installedAt                     DateTime  @default(now()) @map("installed_at")
-
+  @@map("slack_app_installation")
 }
