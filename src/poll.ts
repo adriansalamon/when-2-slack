@@ -109,7 +109,12 @@ export async function handle_vote(
   }
 
   let blocks = await poll_blocks(poll.id);
-  client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+  client.chat.update({
+    text: `Vote in poll: ${poll.title}`,
+    channel: poll.channel,
+    ts: poll.ts,
+    blocks: blocks,
+  });
   logger.info(`User ${user.id} voted in poll ${poll.id}`);
 }
 
@@ -156,7 +161,12 @@ export async function handle_overflow(
     );
   } else if (option === "refresh") {
     let blocks = await poll_blocks(poll.id);
-    client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+    client.chat.update({
+      text: `Vote in poll: ${poll.title}`,
+      channel: poll.channel,
+      ts: poll.ts,
+      blocks: blocks,
+    });
     logger.info(`User ${body.user.id} refreshed poll ${poll.id}`);
   }
 }

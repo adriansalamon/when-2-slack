@@ -70,7 +70,12 @@ export async function handle_add_option_submit(
   });
 
   let blocks = await poll_blocks(poll.id);
-  client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+  client.chat.update({
+    text: `Vote in poll: ${poll.title}`,
+    channel: poll.channel,
+    ts: poll.ts,
+    blocks: blocks,
+  });
 
   logger.info(
     `User ${body.user} created option ${created.id} in poll ${poll.id}`

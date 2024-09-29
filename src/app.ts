@@ -35,41 +35,49 @@ const installationStore = new PrismaInstallationStore({
   logger,
 });
 
-let client_id = process.env.SLACK_CLIENT_ID;
-if (process.env.NODE_ENV !== "production") {
-  client_id = undefined;
-}
+const scopes = [
+  "commands",
+  "channels:read",
+  "channels:history",
+  "groups:history",
+  "groups:read",
+  "reactions:write",
+  "im:history",
+  "chat:write",
+  "reactions:read",
+  "users:read",
+  "mpim:history",
+  "app_mentions:read",
+];
 
-const app = new App({
-  signingSecret: process.env.SLACK_SIGNING_SECRET,
-  clientId: client_id,
-  clientSecret: process.env.SLACK_CLIENT_SECRET,
-  stateSecret: process.env.SLACK_STATE_SECRET,
-  scopes: [
-    "commands",
-    "channels:read",
-    "channels:history",
-    "groups:history",
-    "groups:read",
-    "reactions:write",
-    "im:history",
-    "chat:write",
-    "reactions:read",
-    "users:read",
-    "mpim:history",
-    "app_mentions:read",
-  ],
-  installerOptions: {
-    directInstall: true,
-  },
-  installationStore,
-  logger,
-  logLevel,
-  port: Number(process.env.PORT) || 3000,
-  socketMode: process.env.SLACK_SOCKET_MODE === "true",
-  appToken: process.env.SLACK_APP_TOKEN,
-  token: process.env.SLACK_BOT_TOKEN,
-});
+let app: App;
+
+if (process.env.NODE_ENV === "production") {
+  app = new App({
+    signingSecret: process.env.SLACK_SIGNING_SECRET,
+    clientId: process.env.SLACK_CLIENT_ID,
+    clientSecret: process.env.SLACK_CLIENT_SECRET,
+    stateSecret: process.env.SLACK_STATE_SECRET,
+    scopes,
+    installerOptions: {
+      directInstall: true,
+    },
+    installationStore,
+    logger,
+    logLevel,
+    port: Number(process.env.PORT) || 3000,
+  });
+} else {
+  app = new App({
+    scopes,
+    logger,
+    logLevel,
+    port: Number(process.env.PORT) || 3000,
+    socketMode: true,
+    token: process.env.SLACK_BOT_TOKEN,
+    appToken: process.env.SLACK_APP_TOKEN,
+  });
+}
 
 app.use(async ({ next }) => {
   await next();
