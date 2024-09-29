@@ -10,16 +10,25 @@ Kind of like when2meet but for Slack. Useful when deciding on meeting times.
 
 ### Usage
 
+#### Meetings and Polls
+
 - `/schedule` creates a meeting poll, where members can vote on their availability
 - `/poll` creates a poll where members can vote on a question
 
-For reactions, you can comment:
+#### Reaction reminders
 
-`@<when2slack> :relaxed: :thumbsup: remind here`
-`@<when2slack> :relaxed: :thumbsup: remind dm`
-`@<when2slack> :relaxed: :thumbsup: list`
+For reactions, you can comment on a message with the following:
 
-Inspired by Albin's [slack-reaction-bot](https://github.com/albznw/slack-reaction-bot).
+- `@<when2slack> :relaxed: :thumbsup: list`
+- `@<when2slack> :relaxed: :thumbsup: remind here`
+- `@<when2slack> :relaxed: :thumbsup: remind dm`
+
+This will either list or remind all members of a channel that have not
+reacted with the specified emojis. You can specify multiple emojis.
+This is useful for getting feedback on a message, and allowing
+multiple types of feedback.
+
+Inspired by Albin's awesome [slack-reaction-bot](https://github.com/albznw/slack-reaction-bot).
 
 ### Installation
 
