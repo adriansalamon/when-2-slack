@@ -82,7 +82,7 @@ export async function handle_meeting_submit(
   });
 
   logger.info(
-    `${body.user} created poll ${poll.id} in channel ${poll.channel}`
+    `${body.user.id} created poll ${poll.id} in channel ${poll.channel}`
   );
 }
 

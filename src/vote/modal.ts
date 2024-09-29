@@ -78,7 +78,7 @@ export async function handle_add_option_submit(
   });
 
   logger.info(
-    `User ${body.user} created option ${created.id} in poll ${poll.id}`
+    `User ${body.user.id} created option ${created.id} in poll ${poll.id}`
   );
 }
 
@@ -126,7 +126,7 @@ export async function handle_vote_poll_submit(
   });
 
   logger.info(
-    `${body.user} created poll ${poll.id} in channel ${poll.channel}`
+    `${body.user.id} created poll ${poll.id} in channel ${poll.channel}`
   );
 }
 
