@@ -9,26 +9,43 @@ import {
 } from "@slack/bolt";
 import { WebClient } from "@slack/web-api";
 import { list_non_answered, remind_in_dm } from "./reactions";
+import { meeting_blocks } from "./meetings/message";
+import { vote_blocks } from "./vote/message";
 
 let prisma = new PrismaClient();
+
+export enum PollType {
+  Vote = "vote",
+  Meeting = "meeting",
+}
+
+interface PollOption {
+  time: Date | null;
+  name: string | null;
+}
 
 export interface PollArgs {
   channel: string;
   user_id: string;
   title: string;
-  options: { time: Date }[];
+  type: PollType;
+  options: PollOption[];
+  usersCanAddOption?: boolean;
 }
+
 export async function create_poll(client: WebClient, args: PollArgs) {
   let created = await prisma.poll.create({
     data: {
       author: args.user_id,
       channel: args.channel,
+      type: args.type,
       description: "",
       title: args.title,
       ts: "",
       options: {
         create: args.options,
       },
+      usersCanAddOption: args.usersCanAddOption || false,
     },
   });
 
@@ -65,10 +82,12 @@ export async function handle_vote(
     where: { ts: body.message?.ts, channel: body.channel?.id },
   });
 
+  action.value = action.value || "0";
   let option = await prisma.option.findFirstOrThrow({
     where: { id: parseInt(action.value) },
   });
   let user = body.user;
+  user.name = user.name || "No name";
 
   let vote = await prisma.vote.findFirst({
     where: { user: user.id, optionId: option.id },
@@ -126,85 +145,26 @@ export async function handle_overflow(
   } else if (option === "list-non-responded") {
     let ts = body.message?.ts;
     await list_non_answered(client, body.channel?.id!, body.user.id, ts!);
+  } else if (option === "refresh") {
+    let blocks = await poll_blocks(poll.id);
+    client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
   }
 }
 
-const poll_blocks = async (pollId: number): Promise<(Block | KnownBlock)[]> => {
+export const poll_blocks = async (
+  pollId: number
+): Promise<(Block | KnownBlock)[]> => {
   let poll = await prisma.poll.findFirstOrThrow({
     where: { id: pollId },
     include: { options: { include: { votes: true } } },
   });
 
-  let options = poll.options.flatMap((option) => {
-    let names = option.votes.reduce(
-      (acc, vote) => `${acc} @${vote.userName}`,
-      ""
-    );
+  switch (poll.type) {
+    case PollType.Meeting:
+      return meeting_blocks(poll);
+    case PollType.Vote:
+      return vote_blocks(poll);
+  }
 
-    let time = option.time;
-    const options = {
-      weekday: "long",
-      year: "numeric",
-      month: "long",
-      day: "numeric",
-    };
-
-    let text = `:calendar: *${time.toLocaleDateString("en-US", {
-      weekday: "long",
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    })}, ${time.toLocaleTimeString("sv-SE").slice(0, 5)}*`;
-
-    if (option.votes.length > 0) {
-      text += ` ${"`"}${option.votes.length}${"`"}\n${names}`;
-    }
-
-    return [
-      {
-        type: "section",
-        text: {
-          type: "mrkdwn",
-          text: text,
-        },
-        accessory: {
-          type: "button",
-          action_id: "vote_click",
-          text: {
-            type: "plain_text",
-            emoji: true,
-            text: "Vote",
-          },
-          value: `${option.id}`,
-        },
-      },
-    ];
-  });
-
-  return [
-    {
-      type: "section",
-      text: {
-        type: "mrkdwn",
-        text: `Meeting times for *${poll.title}*. Select all :clock1: timeslots that work! *React* with :no_entry_sign: if no times work!`,
-      },
-      accessory: {
-        type: "overflow",
-        action_id: "form_overflow",
-        options: [
-          { text: { type: "plain_text", text: "Delete" }, value: "delete" },
-          {
-            text: { type: "plain_text", text: "Remind in dm" },
-            value: "remind-dm",
-          },
-          {
-            text: { type: "plain_text", text: "List users not responded" },
-            value: "list-non-responded",
-          },
-        ],
-      },
-    },
-    { type: "divider" },
-    ...options
-  ];
+  return [];
 };

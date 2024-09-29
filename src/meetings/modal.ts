@@ -8,7 +8,7 @@ import {
 import { WebClient } from "@slack/web-api";
 import { Logger } from "@slack/bolt";
 import { PrismaClient } from "@prisma/client";
-import { create_poll } from "./poll";
+import { create_poll, PollType } from "../poll";
 
 let prisma = new PrismaClient();
 
@@ -21,16 +21,18 @@ export async function open_schedule_modal(
 
   try {
     // Call views.open with the built-in client
+    console.log("Opening schedule modal");
+    let view = {
+      ...modal(meetings),
+      private_metadata: JSON.stringify({
+        meetings: meetings,
+        channel: body.channel_id,
+      }),
+    };
     const result = await client.views.open({
       // Pass a valid trigger_id within 3 seconds of receiving it
       trigger_id: body.trigger_id,
-      view: {
-        ...modal(meetings),
-        private_metadata: JSON.stringify({
-          meetings: meetings,
-          channel: body.channel_id,
-        }),
-      },
+      view: view,
     });
     logger.info(result);
   } catch (error) {
@@ -55,7 +57,11 @@ export async function add_meeting(
 }
 
 // Handles submitting of modal, to create a mew poll
-export async function handle_submit(client: WebClient, body: SlackViewAction, logger: Logger) {
+export async function handle_meeting_submit(
+  client: WebClient,
+  body: SlackViewAction,
+  logger: Logger
+) {
   let private_metadata = JSON.parse(body.view.private_metadata);
   let options = Object.values(body.view.state.values)
     .filter((input) => input["select-date"])
@@ -63,19 +69,23 @@ export async function handle_submit(client: WebClient, body: SlackViewAction, lo
       time: new Date(
         `${input["select-date"].selected_date}T${input["select-time"].selected_time}`
       ),
+      name: null,
     }));
 
   let title =
     body.view.state.values["poll-title"]["title"].value || "Schedule meeting";
 
   let poll = await create_poll(client, {
+    type: PollType.Meeting,
     channel: private_metadata.channel,
     user_id: body.user.id,
     options,
     title,
   });
 
-  logger.info(`${body.user} created poll ${poll.id} in channel ${poll.channel}`);
+  logger.info(
+    `${body.user} created poll ${poll.id} in channel ${poll.channel}`
+  );
 }
 
 const modal = (blocks: number): ModalView => {
@@ -141,9 +151,9 @@ const modal = (blocks: number): ModalView => {
       {
         type: "section",
         text: {
-            type: "mrkdwn",
-            text: "*Timeslots*"
-        }
+          type: "mrkdwn",
+          text: "*Timeslots*",
+        },
       },
       ...dateBlocks,
       {
