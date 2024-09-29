@@ -18,7 +18,8 @@ RUN apt-get update -y && apt-get install -y openssl
 WORKDIR /usr/src/app
 ENV NODE_ENV production
 
-COPY --from=build-image ./usr/src/app/package*.json ./
+COPY --from=build-image ./usr/src/app/package.json ./
+COPY --from=build-image ./usr/src/app/package-lock.json ./
 COPY --from=build-image ./usr/src/app/dist ./dist
 COPY --from=build-image ./usr/src/app/prisma ./prisma
 COPY --from=build-image ./usr/src/app/start.sh .
