@@ -15,7 +15,7 @@ import {
 } from "./vote/modal";
 import { handle_vote, handle_overflow } from "./poll";
 import { PrismaClient } from "@prisma/client";
-import { PrismaInstallationStore } from "slack-bolt-prisma";
+import { PrismaInstallationStore } from "@seratch_/bolt-prisma";
 import { ConsoleLogger, LogLevel } from "@slack/logger";
 import { open_vote_modal } from "./vote/modal";
 import { ensure_channel_member, handle_mention } from "./reactions";
