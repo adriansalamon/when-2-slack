@@ -34,7 +34,7 @@ Inspired by Albin's awesome [slack-reaction-bot](https://github.com/albznw/slack
 
 To add a running instance of the bot, you can [add it to Slack](https://when2slack.fly.dev/slack/install).
 
-To run your own instance you will need to create a Slack app att [api.slack.com](https://api.slack.com/apps). You can use the provided `slack_app_manifest.yml` to set the correct permissions and features. You will need to change the `when2slack.fly.dev` url to your own.
+To run your own instance you will need to create a Slack app at [api.slack.com](https://api.slack.com/apps). You can use the provided `slack_app_manifest.yml` to set the correct permissions and features. You will need to change the `when2slack.fly.dev` url to your own.
 
 Deployment is easy with [Fly.io](https://fly.io/). You can deploy the bot with a single command:
 
