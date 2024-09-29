@@ -45,7 +45,6 @@ export async function open_add_option_modal(
         }),
       },
     });
-    logger.info(result);
   } catch (error) {
     logger.error(error);
   }
@@ -70,12 +69,12 @@ export async function handle_add_option_submit(
     },
   });
 
+  let blocks = await poll_blocks(poll.id);
+  client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+
   logger.info(
     `User ${body.user} created option ${created.id} in poll ${poll.id}`
   );
-
-  let blocks = await poll_blocks(poll.id);
-  client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
 }
 
 export async function open_vote_modal(
@@ -95,26 +94,9 @@ export async function open_vote_modal(
         }),
       },
     });
-    logger.info(result);
   } catch (error) {
     logger.error(error);
   }
-}
-
-export async function add_meeting(
-  client: WebClient,
-  body: BlockAction<BlockElementAction>
-) {
-  let private_metadata = JSON.parse(body.view?.private_metadata || "");
-  private_metadata.meetings += 1;
-
-  await client.views.update({
-    view_id: body.view?.id,
-    view: {
-      ...modal(),
-      private_metadata: JSON.stringify(private_metadata),
-    },
-  });
 }
 
 // Handles submitting of modal, to create a mew poll

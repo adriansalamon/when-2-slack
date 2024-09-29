@@ -21,7 +21,6 @@ export async function open_schedule_modal(
 
   try {
     // Call views.open with the built-in client
-    console.log("Opening schedule modal");
     let view = {
       ...modal(meetings),
       private_metadata: JSON.stringify({
@@ -29,12 +28,11 @@ export async function open_schedule_modal(
         channel: body.channel_id,
       }),
     };
-    const result = await client.views.open({
+    await client.views.open({
       // Pass a valid trigger_id within 3 seconds of receiving it
       trigger_id: body.trigger_id,
       view: view,
     });
-    logger.info(result);
   } catch (error) {
     logger.error(error);
   }

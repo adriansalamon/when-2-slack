@@ -213,6 +213,10 @@ export const handle_mention = async (
   const text = event.text.toLowerCase();
   const thread = event.thread_ts;
 
+  logger.info(
+    `User ${invoker} mentioned the bot in channel ${channel}, thread ${thread}`
+  );
+
   if (!thread) {
     await client.chat.postEphemeral({
       channel: channel,
@@ -239,6 +243,10 @@ export const handle_mention = async (
         thread_ts: thread,
       });
 
+      logger.info(
+        `User ${invoker} listed ${no_react_users.length} users not having reacted in channel ${channel}`
+      );
+
       return;
     }
 
@@ -255,6 +263,10 @@ export const handle_mention = async (
       text: message,
       thread_ts: thread,
     });
+
+    logger.info(
+      `User ${invoker} listed ${no_react_users.length} users not having reacted in channel ${channel}`
+    );
 
     return;
   }
@@ -281,6 +293,10 @@ export const handle_mention = async (
           thread_ts: thread,
         });
 
+        logger.info(
+          `User ${invoker} reminded ${no_react_users.length} users not having reacted in channel ${channel}`
+        );
+
         return;
       }
 
@@ -291,6 +307,10 @@ export const handle_mention = async (
         text: text,
         thread_ts: thread,
       });
+
+      logger.info(
+        `User ${invoker} reminded ${no_react_users.length} users not having reacted in channel ${channel}`
+      );
 
       return;
     }
@@ -303,6 +323,10 @@ export const handle_mention = async (
           text: "All users have reacted!",
           thread_ts: thread,
         });
+
+        logger.info(
+          `User ${invoker} reminded ${no_react_users.length} in dms users not having reacted in channel ${channel}`
+        );
 
         return;
       }
@@ -330,6 +354,10 @@ export const handle_mention = async (
         thread_ts: thread,
       });
 
+      logger.info(
+        `User ${invoker} pinged ${no_react_users.length} users in dms not having reacted in channel ${channel}`
+      );
+
       return;
     }
   }
@@ -342,6 +370,10 @@ export const handle_mention = async (
     text: `I didn't understand that, please use \`@${bot_name} :emoji: list\`, \`@${bot_name} :emoji: remind here\` or \`@${bot_name} :emoji: remind dm\``,
     thread_ts: thread,
   });
+
+  logger.error(
+    `User ${invoker} invoked the bot with an invalid command: ${text}`
+  );
 };
 
 let get_no_react_ids_for_reactions = async (

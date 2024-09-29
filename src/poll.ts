@@ -52,6 +52,7 @@ export async function create_poll(client: WebClient, args: PollArgs) {
   let blocks = await poll_blocks(created.id);
 
   let res = await client.chat.postMessage({
+    text: `Vote in poll: ${created.title}`,
     channel: args.channel,
     blocks: blocks,
   });
@@ -76,7 +77,8 @@ export async function create_poll(client: WebClient, args: PollArgs) {
 export async function handle_vote(
   client: WebClient,
   body: BlockAction<ButtonAction>,
-  action: ButtonAction
+  action: ButtonAction,
+  logger: Logger
 ) {
   let poll = await prisma.poll.findFirstOrThrow({
     where: { ts: body.message?.ts, channel: body.channel?.id },
@@ -108,6 +110,7 @@ export async function handle_vote(
 
   let blocks = await poll_blocks(poll.id);
   client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+  logger.info(`User ${user.id} voted in poll ${poll.id}`);
 }
 
 export async function handle_overflow(
@@ -132,22 +135,29 @@ export async function handle_overflow(
       });
 
       await client.chat.delete({ channel: poll.channel, ts: poll.ts });
+      logger.info(`User ${body.user.id} deleted poll ${poll.id}`);
     } else {
       client.chat.postEphemeral({
         channel: poll.channel,
         user: body.user.id,
         text: `You cannot delete other users's polls.`,
       });
+      logger.info(`User ${body.user.id} tried to delete poll ${poll.id}`);
     }
   } else if (option === "remind-dm") {
     let ts = body.message?.ts;
     await remind_in_dm(client, body.channel?.id!, body.user.id, ts!, logger);
+    logger.info(`User ${body.user.id} reminded in DM for poll ${poll.id}`);
   } else if (option === "list-non-responded") {
     let ts = body.message?.ts;
     await list_non_answered(client, body.channel?.id!, body.user.id, ts!);
+    logger.info(
+      `User ${body.user.id} listed non-responded for poll ${poll.id}`
+    );
   } else if (option === "refresh") {
     let blocks = await poll_blocks(poll.id);
     client.chat.update({ channel: poll.channel, ts: poll.ts, blocks: blocks });
+    logger.info(`User ${body.user.id} refreshed poll ${poll.id}`);
   }
 }
 

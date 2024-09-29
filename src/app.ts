@@ -35,12 +35,14 @@ const installationStore = new PrismaInstallationStore({
   logger,
 });
 
-const app_token = process.env.SLACK_APP_TOKEN;
-const token = process.env.SLACK_BOT_TOKEN;
+let client_id = process.env.SLACK_CLIENT_ID;
+if (process.env.NODE_ENV !== "production") {
+  client_id = undefined;
+}
 
 const app = new App({
   signingSecret: process.env.SLACK_SIGNING_SECRET,
-  clientId: process.env.SLACK_CLIENT_ID,
+  clientId: client_id,
   clientSecret: process.env.SLACK_CLIENT_SECRET,
   stateSecret: process.env.SLACK_STATE_SECRET,
   scopes: [
@@ -65,6 +67,8 @@ const app = new App({
   logLevel,
   port: Number(process.env.PORT) || 3000,
   socketMode: process.env.SLACK_SOCKET_MODE === "true",
+  appToken: process.env.SLACK_APP_TOKEN,
+  token: process.env.SLACK_BOT_TOKEN,
 });
 
 app.use(async ({ next }) => {
@@ -133,10 +137,10 @@ app.view("vote_poll_view", async ({ ack, body, client, logger }) => {
 // -----------------------------
 app.action<BlockAction<ButtonAction>>(
   "vote_click",
-  async ({ ack, body, client, action }) => {
+  async ({ ack, body, client, action, logger }) => {
     // Handle when a user votes
     await ack();
-    await handle_vote(client, body, action);
+    await handle_vote(client, body, action, logger);
   }
 );
 

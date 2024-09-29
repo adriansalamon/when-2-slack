@@ -63,10 +63,6 @@ Vote for all :ballot_box_with_check: options you want to select! React with :no_
             text: { type: "plain_text", text: "List users not responded" },
             value: "list-non-responded",
           },
-          {
-            text: { type: "plain_text", text: "Refresh" },
-            value: "refresh",
-          },
         ],
       },
     },
