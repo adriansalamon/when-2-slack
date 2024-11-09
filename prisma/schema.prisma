@@ -28,6 +28,7 @@ model Poll {
 model Option {
   id     Int       @id @default(autoincrement())
   poll   Poll      @relation(fields: [pollId], references: [id], onDelete: Cascade)
+  creator String?
   name   String?
   url    String?
   description String?

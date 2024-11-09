@@ -69,6 +69,7 @@ export async function handle_add_option_submit(
 
   let created = await prisma.option.create({
     data: {
+      creator: body.user.id,
       name: name,
       url: url,
       description: description,

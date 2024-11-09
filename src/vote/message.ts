@@ -16,6 +16,10 @@ function option_block(poll : Poll, option: Option & { votes: Vote[] }) {
     text = `*${name}*`;
   }
 
+  if (option.creator) {
+    text += ` | <@${option.creator}>`;
+  }
+
 
   if (option.votes.length > 0) {
     text += ` ${"`"}${option.votes.length}${"`"}`;
@@ -56,13 +60,13 @@ export function vote_blocks(
     .sort((a, b) => b.votes.length - a.votes.length)
     .flatMap((option) => option_block(poll, option))
 
-  let text = `:ballot_box_with_ballot: *${poll.title}*`
+  let text = `:ballot_box_with_ballot: *${poll.title}* by <@${poll.author}>`;
 
   if (poll.description) {
     text += `\n${poll.description}`;
   }
 
-  text += `\nVote for all :ballot_box_with_check: options you want to select! React with :no_entry_sign: if you don't want to vote.`
+  text += `\nVote for all options! React with :no_entry_sign: if you don't want to vote.`
 
   return [
     {
