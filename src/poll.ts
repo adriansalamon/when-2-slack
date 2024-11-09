@@ -192,6 +192,48 @@ export async function handle_overflow(
   }
 }
 
+export const list_votes_for_user = async (
+  client: WebClient,
+  body: BlockAction<ButtonAction>,
+  logger: Logger
+) => {
+  let votes = await prisma.vote.findMany({
+    where: {
+      poll: {
+        ts: body.message?.ts,
+      },
+      user: body.user.id,
+      option: {
+        isNot: undefined,
+      },
+    },
+    include: { option: true },
+  });
+
+  if (votes.length === 0) {
+    await client.chat.postEphemeral({
+      channel: body.channel?.id!,
+      user: body.user.id,
+      text: `You have not voted in this poll`,
+    });
+    return;
+  }
+
+  let text = `You have voted for:\n`;
+
+  for (let vote of votes) {
+    text += `${vote.option.name}\n`;
+  }
+
+  await client.chat.postEphemeral({
+    channel: body.channel?.id!,
+    user: body.user.id,
+    text: text
+  });
+
+  logger.info(`User ${body.user.id} listed own votes for poll ${body.channel?.id!}`);
+}
+
 export const poll_blocks = async (
   pollId: number
 ): Promise<(Block | KnownBlock)[]> => {

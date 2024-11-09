@@ -110,6 +110,14 @@ export function vote_blocks(
           },
           action_id: "add-option",
         },
+        {
+          type: "button",
+          text: {
+            type: "plain_text",
+            text: "View my votes"
+          },
+          action_id: "view-own-votes",
+        },
       ],
     },
   ];

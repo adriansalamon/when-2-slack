@@ -14,7 +14,7 @@ import {
   open_add_option_modal,
   handle_remove_options_submit,
 } from "./vote/modal";
-import { handle_vote, handle_overflow } from "./poll";
+import { handle_vote, handle_overflow, list_votes_for_user } from "./poll";
 import { PrismaClient } from "@prisma/client";
 import { PrismaInstallationStore } from "@seratch_/bolt-prisma";
 import { ConsoleLogger, LogLevel } from "@slack/logger";
@@ -168,6 +168,15 @@ app.action<BlockAction<ButtonAction>>(
     // Handle when a user wants to add an option
     await ack();
     await open_add_option_modal(client, body, logger);
+  }
+);
+
+app.action<BlockAction<ButtonAction>>(
+  "view-own-votes",
+  async ({ ack, body, client, logger }) => {
+    // Handle when a user wants to add an option
+    await ack();
+    await list_votes_for_user(client, body, logger);
   }
 );
 
