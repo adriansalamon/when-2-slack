@@ -16,10 +16,9 @@ function option_block(poll : Poll, option: Option & { votes: Vote[] }) {
     text = `*${name}*`;
   }
 
-  if (option.creator) {
-    text += ` | <@${option.creator}>`;
-  }
-
+  // if (option.creator) {
+  //   text += ` | <@${option.creator}>`;
+  // }
 
   if (option.votes.length > 0) {
     text += ` ${"`"}${option.votes.length}${"`"}`;
