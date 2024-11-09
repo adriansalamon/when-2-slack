@@ -18,6 +18,8 @@ model Poll {
   channel           String
   title             String
   description       String
+  addOptionDesc     String?
+  displayUsersVotes Boolean  @default(true)
   usersCanAddOption Boolean  @default(false)
   options           Option[]
   votes             Vote[]
@@ -27,6 +29,8 @@ model Option {
   id     Int       @id @default(autoincrement())
   poll   Poll      @relation(fields: [pollId], references: [id], onDelete: Cascade)
   name   String?
+  url    String?
+  description String?
   time   DateTime?
   votes  Vote[]
   pollId Int

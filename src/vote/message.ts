@@ -1,17 +1,31 @@
 import { Poll, PrismaClient, Option, Vote } from "@prisma/client";
 
-function option_block(option: Option & { votes: Vote[] }) {
+function option_block(poll : Poll, option: Option & { votes: Vote[] }) {
   let names = option.votes.reduce(
     (acc, vote) => `${acc} @${vote.userName}`,
     ""
   );
 
   let name = option.name || "No name";
+  
+  let text = "";
 
-  let text = `*${name}*`;
+  if (option.url) {
+    text = `*<${option.url}|${option.name}>*`;
+  } else {
+    text = `*${name}*`;
+  }
+
 
   if (option.votes.length > 0) {
-    text += ` ${"`"}${option.votes.length}${"`"}\n${names}`;
+    text += ` ${"`"}${option.votes.length}${"`"}`;
+  }
+  if (option.description) {
+    text += `\n${option.description}`;
+  }
+
+  if (poll.displayUsersVotes && names) {
+    text += `\n${names}`;
   }
 
   return [
@@ -40,21 +54,32 @@ export function vote_blocks(
 ) {
   let options = poll.options
     .sort((a, b) => b.votes.length - a.votes.length)
-    .flatMap(option_block);
+    .flatMap((option) => option_block(poll, option))
+
+  let text = `:ballot_box_with_ballot: *${poll.title}*`
+
+  if (poll.description) {
+    text += `\n${poll.description}`;
+  }
+
+  text += `\nVote for all :ballot_box_with_check: options you want to select! React with :no_entry_sign: if you don't want to vote.`
 
   return [
     {
       type: "section",
       text: {
         type: "mrkdwn",
-        text: `Poll: *${poll.title}*.
-Vote for all :ballot_box_with_check: options you want to select! React with :no_entry_sign: if you don't want to vote.`,
+        text: text
       },
       accessory: {
         type: "overflow",
         action_id: "form_overflow",
         options: [
           { text: { type: "plain_text", text: "Delete" }, value: "delete" },
+          {
+            text: { type: "plain_text", text: "Remove options" },
+            value: "remove-options",
+          },
           {
             text: { type: "plain_text", text: "Remind in dm" },
             value: "remind-dm",

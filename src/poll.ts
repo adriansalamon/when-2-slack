@@ -11,6 +11,7 @@ import { WebClient } from "@slack/web-api";
 import { list_non_answered, remind_in_dm } from "./reactions";
 import { meeting_blocks } from "./meetings/message";
 import { vote_blocks } from "./vote/message";
+import { open_remove_options_modal } from "./vote/modal";
 
 let prisma = new PrismaClient();
 
@@ -31,6 +32,9 @@ export interface PollArgs {
   type: PollType;
   options: PollOption[];
   usersCanAddOption?: boolean;
+  displayVotes?: boolean;
+  addOptionDesc?: string | null;
+  description?: string | null;
 }
 
 export async function create_poll(client: WebClient, args: PollArgs) {
@@ -39,13 +43,15 @@ export async function create_poll(client: WebClient, args: PollArgs) {
       author: args.user_id,
       channel: args.channel,
       type: args.type,
-      description: "",
+      description: args.description || "",
       title: args.title,
+      addOptionDesc: args.addOptionDesc,
       ts: "",
       options: {
         create: args.options,
       },
       usersCanAddOption: args.usersCanAddOption || false,
+      displayUsersVotes: args.displayVotes
     },
   });
 
@@ -149,7 +155,22 @@ export async function handle_overflow(
       });
       logger.info(`User ${body.user.id} tried to delete poll ${poll.id}`);
     }
-  } else if (option === "remind-dm") {
+  } else if (option === "remove-options") {
+    if (poll.author === body.user.id) {
+      await open_remove_options_modal(client, body, logger);
+    } else {
+      client.chat.postEphemeral({
+        channel: poll.channel,
+        user: body.user.id,
+        text: `You cannot remove options form other users's polls.`,
+      });
+      logger.info(`User ${body.user.id} tried to remove options for poll ${poll.id}`);
+
+    }
+  }
+  
+  
+  else if (option === "remind-dm") {
     let ts = body.message?.ts;
     await remind_in_dm(client, body.channel?.id!, body.user.id, ts!, logger);
     logger.info(`User ${body.user.id} reminded in DM for poll ${poll.id}`);

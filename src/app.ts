@@ -12,6 +12,7 @@ import {
   handle_add_option_submit,
   handle_vote_poll_submit,
   open_add_option_modal,
+  handle_remove_options_submit,
 } from "./vote/modal";
 import { handle_vote, handle_overflow } from "./poll";
 import { PrismaClient } from "@prisma/client";
@@ -180,10 +181,19 @@ app.view("poll_add_option_view", async ({ ack, client, body, logger }) => {
 });
 
 // -----------------------------
+// Add option modal
+// -----------------------------
+app.view("remove_options_poll_view", async ({ ack, client, body, logger }) => {
+  // Add option to poll
+  await ack();
+  await handle_remove_options_submit(client, body, logger);
+});
+
+// -----------------------------
 // Mentions
 // -----------------------------
 app.event("app_mention", async ({ client, event, logger }) => {
-  console.log("Handling mention");
+  logger.info(`Received mention in channel ${event.channel}`);
   await handle_mention(client, event, logger);
 });
 
