@@ -38,12 +38,12 @@ export async function open_add_option_modal(
       where: { pollId: poll.id },
     });
 
-    if (options.length > 46) {
+    if (options.length > 45) {
       if (body.channel) {
         await client.chat.postEphemeral({
           channel: body.channel?.id,
           user: body.user.id,
-          text: "You can't add more than 46 options to a poll, since Slack has a limited message size. Sorry!",
+          text: "You can't add more than 45 options to a poll, since Slack has a limited message size. Sorry!",
         });
       }
       return;
