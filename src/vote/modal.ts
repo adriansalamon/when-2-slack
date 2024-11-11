@@ -33,6 +33,21 @@ export async function open_add_option_modal(
       }
       return;
     }
+    
+    const options = await prisma.option.findMany({
+      where: { pollId: poll.id },
+    });
+
+    if (options.length > 46) {
+      if (body.channel) {
+        await client.chat.postEphemeral({
+          channel: body.channel?.id,
+          user: body.user.id,
+          text: "You can't add more than 46 options to a poll, since Slack has a limited message size. Sorry!",
+        });
+      }
+      return;
+    }
 
     // Call views.open with the built-in client
     const result = await client.views.open({
